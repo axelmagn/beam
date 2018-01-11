@@ -1,7 +1,5 @@
 package org.apache.beam.runners.flink.harness;
 
-import com.google.common.collect.ImmutableList;
-
 import java.io.IOException;
 
 /**
@@ -36,7 +34,7 @@ public class DockerShellClient {
     // TODO: stop
 
     /**
-     * Execute a command in bash
+     * Execute a command in bash.
      * @param command command to execute
      * @return the resulting process
      */
