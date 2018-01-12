@@ -7,6 +7,9 @@ import org.junit.runners.JUnit4;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+/**
+ * Unit tests for the DockerShellClient.
+ */
 @RunWith(JUnit4.class)
 public class DockerShellClientTest {
 

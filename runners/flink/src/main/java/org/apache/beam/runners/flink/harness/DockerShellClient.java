@@ -1,6 +1,7 @@
 package org.apache.beam.runners.flink.harness;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A docker client that operates by executing shell commands to interact with docker.
@@ -9,6 +10,9 @@ public class DockerShellClient {
 
     // set as a variable in case we need to refactor to /usr/bin/docker or $(which docker) later.
     private static final String DOCKER_CMD = "docker";
+    private static final String WHICH_CMD = "which";
+    private static final Long TIMEOUT_MS = 25L;
+    private static final TimeUnit TIMEOUT_UNIT = TimeUnit.MILLISECONDS;
 
     private final Runtime runtime;
 
@@ -21,7 +25,13 @@ public class DockerShellClient {
     }
 
     public boolean isAvailable() throws IOException, InterruptedException {
-        Process proc = runCmd(DOCKER_CMD, "version");
+        // check that a `docker` binary exists
+        Process proc = runCmd(WHICH_CMD, DOCKER_CMD);
+        if (proc.waitFor() != 0) {
+            return false;
+        }
+        // check that this binary can handle the `version` command
+        proc = runCmd(DOCKER_CMD, "version");
         return proc.waitFor() == 0;
     }
 
