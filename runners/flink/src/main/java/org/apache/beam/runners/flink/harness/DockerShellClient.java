@@ -35,13 +35,22 @@ public class DockerShellClient {
         return proc.waitFor() == 0;
     }
 
-    // TODO: import
-
-    // TODO: create
-
-    // TODO: start
-
-    // TODO: stop
+    public Process run(String imageName, String[] dockerArgs, String[] imageArgs)
+             throws IOException {
+        int dockerOptsIdx = 2;
+        int imageArgsIdx = dockerOptsIdx + dockerArgs.length + 1;
+        String[] cmd = new String[imageArgsIdx + imageArgs.length];
+        cmd[0] = DOCKER_CMD;
+        cmd[1] = "run";
+        cmd[imageArgsIdx - 1] = imageName;
+        for (int i = 0; i < dockerArgs.length; i++) {
+            cmd[i + dockerOptsIdx] = dockerArgs[i];
+        }
+        for (int i = 0; i < imageArgs.length; i++) {
+            cmd[i + imageArgsIdx] = imageArgs[i];
+        }
+        return runCmd(cmd);
+    }
 
     /**
      * Execute a command in bash.
