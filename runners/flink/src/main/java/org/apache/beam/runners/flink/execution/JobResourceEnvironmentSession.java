@@ -11,6 +11,7 @@ public class JobResourceEnvironmentSession implements EnvironmentSession {
   private final RunnerApi.Environment environment;
   private final ArtifactSource artifactSource;
   private final SdkHarnessClient client;
+  private boolean isClosed = false;
 
   public JobResourceEnvironmentSession(
       RunnerApi.Environment environment,
@@ -22,22 +23,32 @@ public class JobResourceEnvironmentSession implements EnvironmentSession {
   }
 
   @Override
-  public RunnerApi.Environment getEnvironment() {
+  public RunnerApi.Environment getEnvironment() throws EnvironmentSessionException {
+    validateNotClosed();
     return environment;
   }
 
   @Override
-  public ArtifactSource getArtifactSource() {
+  public ArtifactSource getArtifactSource() throws EnvironmentSessionException{
+    validateNotClosed();
     return artifactSource;
   }
 
   @Override
-  public SdkHarnessClient getClient() {
+  public SdkHarnessClient getClient() throws EnvironmentSessionException {
+    validateNotClosed();
     return client;
+  }
+
+  private void validateNotClosed() throws EnvironmentSessionClosedException {
+    if(this.isClosed) {
+      throw new EnvironmentSessionClosedException();
+    }
   }
 
   @Override
   public void close() throws Exception {
     // TODO: eventually use this for reference counting open sessions
+    this.isClosed = true;
   }
 }

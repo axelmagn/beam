@@ -33,15 +33,15 @@ public interface EnvironmentSession extends AutoCloseable {
   /**
    * Get the environment that the session uses.
    */
-  Environment getEnvironment();
+  Environment getEnvironment() throws EnvironmentSessionException;
 
   /**
    * Get the ArtifactSource that the session uses.
    */
-  ArtifactSource getArtifactSource();
+  ArtifactSource getArtifactSource() throws EnvironmentSessionException;
 
   /**
    * Get an {@link SdkHarnessClient} that can communicate with an instance of the environment.
    */
-  SdkHarnessClient getClient();
+  SdkHarnessClient getClient() throws EnvironmentSessionException;
 }
