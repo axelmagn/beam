@@ -41,6 +41,7 @@ import javax.annotation.Nullable;
 public class SingletonSdkHarnessManager implements  SdkHarnessManager {
   private static SingletonSdkHarnessManager ourInstance = new SingletonSdkHarnessManager();
 
+  /** Get the singleton instance of the harness manager. */
   public static SingletonSdkHarnessManager getInstance() {
     return ourInstance;
   }

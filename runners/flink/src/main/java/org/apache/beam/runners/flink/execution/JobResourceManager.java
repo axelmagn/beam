@@ -24,9 +24,20 @@ import java.util.concurrent.ExecutorService;
 
 /**
  * A class that manages the long-lived resources of an individual job.
+ *
+ * Only one harness environment is currently supported per job.
  */
 public class JobResourceManager {
 
+  /**
+   * Create a new JobResourceManager
+   * @param jobInfo Provisioning info pertaining to the job.
+   * @param environment The primary harness environment used by the job.
+   * @param artifactSource A source of artifacts available to the sdk harness instance.
+   * @param serverFactory A server factory used for supporting gRPC services.
+   * @param executor The executor used for concurrent operations.
+   * @return A new JobResourceManager.
+   */
   public static JobResourceManager create(
       ProvisionApi.ProvisionInfo jobInfo,
       RunnerApi.Environment environment,
@@ -64,11 +75,14 @@ public class JobResourceManager {
     this.executor = executor;
   }
 
+  /**
+   * Get a new environment session using the manager's resources.
+   * @return
+   */
   public EnvironmentSession getSession() {
     if (!isStarted()) {
       throw new IllegalStateException("JobResourceManager has not been properly initialized.");
     }
-
     return new JobResourceEnvironmentSession(
         remoteEnvironment.getEnvironment(),
         artifactSource,
@@ -76,6 +90,11 @@ public class JobResourceManager {
     );
   }
 
+  /**
+   * Start all JobResourceManager resources that have a lifecycle, such as gRPC services and remote
+   * environments.
+   * @throws Exception
+   */
   public void start() throws Exception {
     // logging service.
     LogWriter logWriter = Slf4jLogWriter.getDefault();
@@ -109,6 +128,10 @@ public class JobResourceManager {
     remoteEnvironment = containerManager.getEnvironment(environment);
   }
 
+  /**
+   * Check if job resources have been successfully started and set.
+   * @return true if all resources are started.
+   */
   public boolean isStarted() {
     return this.loggingServiceServer != null
         && this.retrievalServiceServer != null

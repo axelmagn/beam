@@ -4,6 +4,9 @@ import org.apache.beam.model.pipeline.v1.RunnerApi;
 import org.apache.beam.runners.fnexecution.artifact.ArtifactSource;
 import org.apache.beam.runners.fnexecution.control.SdkHarnessClient;
 
+/**
+ * An environment session that is managed by a JobResourceManager.
+ */
 public class JobResourceEnvironmentSession implements EnvironmentSession {
   private final RunnerApi.Environment environment;
   private final ArtifactSource artifactSource;
