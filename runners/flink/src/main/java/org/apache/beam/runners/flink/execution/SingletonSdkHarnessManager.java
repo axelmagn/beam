@@ -48,10 +48,22 @@ public class SingletonSdkHarnessManager implements  SdkHarnessManager {
 
   private final ServerFactory serverFactory;
   private final ExecutorService executorService;
+  private final JobResourceManagerFactory jobResourceManagerFactory;
 
   private SingletonSdkHarnessManager() {
-    serverFactory = ServerFactory.createDefault();
-    executorService = Executors.newCachedThreadPool();
+    this(
+        ServerFactory.createDefault(),
+        Executors.newCachedThreadPool(),
+        JobResourceManagerFactory.create());
+  }
+
+  private SingletonSdkHarnessManager(
+      ServerFactory serverFactory,
+      ExecutorService executorService,
+      JobResourceManagerFactory jobResourceManagerFactory) {
+    this.serverFactory = serverFactory;
+    this.executorService = executorService;
+    this.jobResourceManagerFactory = jobResourceManagerFactory;
   }
 
   @Nullable
@@ -65,7 +77,7 @@ public class SingletonSdkHarnessManager implements  SdkHarnessManager {
 
     if (jobResourceManager == null) {
       jobResourceManager =
-          JobResourceManager.create(
+          jobResourceManagerFactory.create(
               jobInfo,
               environment,
               artifactSource,
