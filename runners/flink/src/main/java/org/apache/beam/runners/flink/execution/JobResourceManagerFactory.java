@@ -24,6 +24,8 @@ public class JobResourceManagerFactory {
       ArtifactSource artifactSource,
       ServerFactory serverFactory,
       ExecutorService executor) {
-    return JobResourceManager.create(jobInfo, environment, artifactSource, serverFactory, executor);
+    JobResourceFactory jobResourceFactory = JobResourceFactory.create(serverFactory, executor);
+    return JobResourceManager
+        .create(jobInfo, environment, artifactSource, jobResourceFactory);
   }
 }
