@@ -18,6 +18,7 @@
 
 package org.apache.beam.runners.flink.execution;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -57,7 +58,8 @@ public class SingletonSdkHarnessManager implements  SdkHarnessManager {
         JobResourceManagerFactory.create());
   }
 
-  private SingletonSdkHarnessManager(
+  @VisibleForTesting
+  SingletonSdkHarnessManager(
       ServerFactory serverFactory,
       ExecutorService executorService,
       JobResourceManagerFactory jobResourceManagerFactory) {
