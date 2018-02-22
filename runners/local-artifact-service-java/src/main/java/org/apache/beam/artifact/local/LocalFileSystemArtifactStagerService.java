@@ -20,7 +20,6 @@ package org.apache.beam.artifact.local;
 
 import static com.google.common.base.Preconditions.checkState;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Throwables;
 import io.grpc.Status;
 import io.grpc.StatusException;
@@ -35,13 +34,14 @@ import java.util.Collection;
 import javax.annotation.Nullable;
 import org.apache.beam.model.jobmanagement.v1.ArtifactApi;
 import org.apache.beam.model.jobmanagement.v1.ArtifactStagingServiceGrpc;
-import org.apache.beam.runners.fnexecution.FnService;
+import org.apache.beam.runners.fnexecution.artifact.ArtifactStagingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** An {@code ArtifactStagingService} which stages files to a local temp directory. */
 public class LocalFileSystemArtifactStagerService
-    extends ArtifactStagingServiceGrpc.ArtifactStagingServiceImplBase implements FnService {
+    extends ArtifactStagingServiceGrpc.ArtifactStagingServiceImplBase
+    implements ArtifactStagingService {
   private static final Logger LOG =
       LoggerFactory.getLogger(LocalFileSystemArtifactStagerService.class);
 
@@ -114,8 +114,7 @@ public class LocalFileSystemArtifactStagerService
     // TODO: Close all active staging calls, signalling errors to the caller.
   }
 
-  @VisibleForTesting
-  LocalArtifactStagingLocation getLocation() {
+  public LocalArtifactStagingLocation getLocation() {
     return location;
   }
 
