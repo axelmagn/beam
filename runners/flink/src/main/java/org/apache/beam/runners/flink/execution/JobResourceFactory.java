@@ -1,6 +1,7 @@
 package org.apache.beam.runners.flink.execution;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 import org.apache.beam.model.fnexecution.v1.ProvisionApi.ProvisionInfo;
 import org.apache.beam.model.pipeline.v1.RunnerApi;
@@ -12,8 +13,10 @@ import org.apache.beam.runners.fnexecution.artifact.GrpcArtifactProxyService;
 import org.apache.beam.runners.fnexecution.control.SdkHarnessClientControlService;
 import org.apache.beam.runners.fnexecution.data.FnDataService;
 import org.apache.beam.runners.fnexecution.data.GrpcDataService;
+import org.apache.beam.runners.fnexecution.environment.DockerWrapper;
 import org.apache.beam.runners.fnexecution.environment.EnvironmentManager;
 import org.apache.beam.runners.fnexecution.environment.RemoteEnvironment;
+import org.apache.beam.runners.fnexecution.environment.SingletonDockerEnvironmentManager;
 import org.apache.beam.runners.fnexecution.logging.GrpcLoggingService;
 import org.apache.beam.runners.fnexecution.logging.LogWriter;
 import org.apache.beam.runners.fnexecution.logging.Slf4jLogWriter;
@@ -76,8 +79,14 @@ public class JobResourceFactory {
   /** Create a new container manager from artifact source and jobInfo. */
   EnvironmentManager containerManager(ArtifactSource artifactSource, ProvisionInfo jobInfo)
       throws IOException {
-    // TODO: replace this with a real environment manager implementation
-    return new NoopEnvironmentManager();
+    return SingletonDockerEnvironmentManager.forServices(
+        // TODO: Replace hardcoded values with configurable ones
+        DockerWrapper.forCommand("docker", Duration.ofSeconds(30)),
+        controlService(),
+        loggingService(),
+        artifactRetrievalService(artifactSource),
+        provisionService(jobInfo)
+    );
   }
 
 }
