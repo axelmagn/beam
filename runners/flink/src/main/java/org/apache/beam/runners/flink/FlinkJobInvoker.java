@@ -35,7 +35,8 @@ public class FlinkJobInvoker implements JobInvoker {
     PipelineOptions options = PipelineOptionsTranslation.fromProto(preparation.options());
     Pipeline pipeline = PipelineTranslation.fromProto(preparation.pipeline());
     FlinkRunner runner = FlinkRunner.fromOptions(options);
-    ArtifactSource artifactSource = preparation.stagingService().getService().accessor();
+    ArtifactSource artifactSource = preparation.stagingService().getService().createAccessor();
+    runner.setArtifactSource(artifactSource);
     return FlinkJobInvocation.create(invocationId, executorService, runner, pipeline);
   }
 }

@@ -23,16 +23,14 @@ public class FlinkJobInvocation implements JobInvocation {
   public static FlinkJobInvocation create(
       String id,
       ListeningExecutorService executorService,
-      FlinkRunner runner, Pipeline pipeline,
-      ArtifactSource artifactSource) {
-    return new FlinkJobInvocation(id, executorService, runner, pipeline, artifactSource);
+      FlinkRunner runner, Pipeline pipeline) {
+    return new FlinkJobInvocation(id, executorService, runner, pipeline);
   }
 
   private final String id;
   private final ListeningExecutorService executorService;
   private final FlinkRunner runner;
   private final Pipeline pipeline;
-  private final ArtifactSource artifactSource;
 
   @Nullable
   private ListenableFuture<PipelineResult> invocationFuture;
@@ -41,13 +39,11 @@ public class FlinkJobInvocation implements JobInvocation {
       String id,
       ListeningExecutorService executorService,
       FlinkRunner runner,
-      Pipeline pipeline,
-      ArtifactSource artifactSource) {
+      Pipeline pipeline) {
     this.id = id;
     this.executorService = executorService;
     this.runner = runner;
     this.pipeline = pipeline;
-    this.artifactSource = artifactSource;
     this.invocationFuture = null;
   }
 

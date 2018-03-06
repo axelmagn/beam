@@ -17,6 +17,10 @@ import java.io.IOException;
 public class LocalArtifactSource implements ArtifactSource {
   private static final int DEFAULT_CHUNK_SIZE_BYTES = 2 * 1024 * 1024;
 
+  public static LocalArtifactSource create(LocalArtifactStagingLocation location) {
+    return new LocalArtifactSource(location);
+  }
+
   private final LocalArtifactStagingLocation location;
 
   private LocalArtifactSource(LocalArtifactStagingLocation location) {

@@ -34,6 +34,7 @@ import java.util.Collection;
 import javax.annotation.Nullable;
 import org.apache.beam.model.jobmanagement.v1.ArtifactApi;
 import org.apache.beam.model.jobmanagement.v1.ArtifactStagingServiceGrpc;
+import org.apache.beam.runners.fnexecution.artifact.ArtifactSource;
 import org.apache.beam.runners.fnexecution.artifact.ArtifactStagingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -107,6 +108,11 @@ public class LocalFileSystemArtifactStagerService
             .setStagingToken(location.getRootPath())
             .build());
     responseObserver.onCompleted();
+  }
+
+  @Override
+  public ArtifactSource createAccessor() {
+    return LocalArtifactSource.create(location);
   }
 
   @Override
