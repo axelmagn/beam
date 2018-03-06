@@ -28,5 +28,5 @@ public interface ArtifactStagingService extends FnService {
    * <p>Once an artifact staging service has staged artifacts, runners need a way to access them.
    * Thus this method provides an ArtifactSource that can access them.
    */
-  public ArtifactSource createAccessor();
+  ArtifactSource createAccessor();
 }

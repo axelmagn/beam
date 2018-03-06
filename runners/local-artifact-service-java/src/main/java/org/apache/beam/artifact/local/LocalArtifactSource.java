@@ -3,13 +3,12 @@ package org.apache.beam.artifact.local;
 import com.google.protobuf.ByteString;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
-import org.apache.beam.model.jobmanagement.v1.ArtifactApi;
-import org.apache.beam.runners.fnexecution.artifact.ArtifactSource;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import org.apache.beam.model.jobmanagement.v1.ArtifactApi;
+import org.apache.beam.runners.fnexecution.artifact.ArtifactSource;
 
 /**
  * An artifact source drawn from a local file system.
