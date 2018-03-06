@@ -19,11 +19,18 @@ package org.apache.beam.runners.flink;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
+
+import org.apache.beam.artifact.local.LocalArtifactStagingLocation;
+import org.apache.beam.model.jobmanagement.v1.ArtifactApi.ArtifactMetadata;
+import org.apache.beam.model.jobmanagement.v1.ArtifactApi.Manifest;
 import org.apache.beam.runners.core.construction.PipelineTranslation;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.flink.api.common.JobExecutionResult;
+import org.apache.flink.api.common.cache.DistributedCache;
 import org.apache.flink.api.java.CollectionEnvironment;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.runtime.state.AbstractStateBackend;
@@ -260,4 +267,53 @@ class FlinkPipelineExecutionEnvironment {
     return flinkStreamEnv;
   }
 
+  public void loadPortabilityArtifacts() throws IOException {
+    // TODO: handle artifact tokens
+    // verify location
+    String stagingDirPath = options.getArtifactsStagingLocation();
+    if (stagingDirPath.isEmpty()) {
+      // exit early if string is empty.
+      LOG.warn("No artifact staging directory specified. Skipping artifact load.");
+      return;
+    }
+    File stagingDirFile = new File(stagingDirPath);
+    LocalArtifactStagingLocation location =
+        LocalArtifactStagingLocation.forExistingDirectory(stagingDirFile);
+    FlinkCachedArtifactPaths cachedArtifactPaths = FlinkCachedArtifactPaths.createDefault();
+
+    // load manifest
+    Manifest manifest;
+    File manifestFile = location.getManifestFile();
+    try (FileInputStream fStream = new FileInputStream(manifestFile)) {
+      manifest = Manifest.parseFrom(fStream);
+    }
+
+    // Register manifest in cache
+    String manifestUri = manifestFile.toURI().toASCIIString();
+    String cachedManifestName = cachedArtifactPaths.getManifestPath();
+    registerCachedFile(manifestUri, cachedManifestName);
+
+    // load each artifact
+    for (ArtifactMetadata metadata : manifest.getArtifactList()) {
+      String name = metadata.getName();
+      File artifactFile = location.getArtifactFile(name);
+      String artifactUri = artifactFile.toURI().toASCIIString();
+      String cachedName = cachedArtifactPaths.getArtifactPath(name);
+      // TODO: double check that artifact file exists
+      // (this should be true given the path was provided by LocalArtifactStagingLocation, but
+      // double checking here would make us more robust to code changes and errors).
+      // TODO: check artifact md5 if available
+      registerCachedFile(artifactUri, cachedName);
+    }
+  }
+
+  private void registerCachedFile(String fileUri, String name) {
+    if (flinkBatchEnv != null) {
+      flinkBatchEnv.registerCachedFile(fileUri, name);
+    } else if (flinkStreamEnv != null) {
+      flinkStreamEnv.registerCachedFile(fileUri, name);
+    } else {
+      throw new IllegalStateException("The Pipeline has not yet been translated.");
+    }
+  }
 }

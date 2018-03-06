@@ -109,6 +109,14 @@ public class FlinkRunner extends PipelineRunner<PipelineResult> {
     LOG.info("Translating pipeline to Flink program.");
     env.translate(this, pipeline);
 
+    LOG.info("Registering pipeline artifacts in Flink program.");
+    try {
+      env.loadPortabilityArtifacts();
+    } catch (Exception e) {
+      LOG.error("Artifact registration failed", e);
+      throw new RuntimeException("Artifact registration failed", e);
+    }
+
     JobExecutionResult result;
     try {
       LOG.info("Starting execution of Flink program.");
