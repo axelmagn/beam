@@ -22,12 +22,15 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 
+import com.google.common.io.Files;
 import org.apache.beam.artifact.local.LocalArtifactStagingLocation;
 import org.apache.beam.model.jobmanagement.v1.ArtifactApi.ArtifactMetadata;
 import org.apache.beam.model.jobmanagement.v1.ArtifactApi.Manifest;
 import org.apache.beam.runners.core.construction.PipelineTranslation;
+import org.apache.beam.runners.fnexecution.artifact.ArtifactSource;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.flink.api.common.JobExecutionResult;
 import org.apache.flink.api.common.cache.DistributedCache;
@@ -267,7 +270,24 @@ class FlinkPipelineExecutionEnvironment {
     return flinkStreamEnv;
   }
 
-  public void loadPortabilityArtifacts() throws IOException {
+  public void loadStagedArtifacts(ArtifactSource artifactSource) throws IOException {
+    // get temp directory for cached files
+    File tempDir = Files.createTempDir();
+    Path tempDirPath = tempDir.toPath();
+
+    // store and register manifest
+    Manifest manifest = artifactSource.getManifest();
+    manifest.hashCode();
+    Path manifestPath = tempDirPath.resolve("MANIFEST_%d");
+
+    // TODO: store and register manifest
+
+    // TODO: store and register artifacts
+
+  }
+
+  /*
+  public void loadPortabilityArtifacts(ArtifactSource artifactSource) throws IOException {
     // TODO: handle artifact tokens
     // verify location
     String stagingDirPath = options.getArtifactsStagingLocation();
@@ -316,4 +336,5 @@ class FlinkPipelineExecutionEnvironment {
       throw new IllegalStateException("The Pipeline has not yet been translated.");
     }
   }
+  */
 }

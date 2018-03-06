@@ -21,4 +21,12 @@ package org.apache.beam.runners.fnexecution.artifact;
 import org.apache.beam.runners.fnexecution.FnService;
 
 /** An implementation of the Beam Artifact Staging Service. */
-public interface ArtifactStagingService extends FnService {}
+public interface ArtifactStagingService extends FnService {
+  /**
+   * Get an artifact source that can access staged artifacts.
+   *
+   * <p>Once an artifact staging service has staged artifacts, runners need a way to access them.
+   * Thus this method provides an ArtifactSource that can access them.
+   */
+  public ArtifactSource accessor();
+}

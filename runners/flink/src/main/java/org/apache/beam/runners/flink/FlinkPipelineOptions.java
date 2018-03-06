@@ -19,8 +19,6 @@ package org.apache.beam.runners.flink;
 
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-
-import java.nio.file.Path;
 import java.util.List;
 import org.apache.beam.sdk.options.ApplicationNameOptions;
 import org.apache.beam.sdk.options.Default;
@@ -109,15 +107,6 @@ public interface FlinkPipelineOptions
   @JsonIgnore
   AbstractStateBackend getStateBackend();
   void setStateBackend(AbstractStateBackend stateBackend);
-
-  /**
-   * Directory on flink master that contains staging
-   * artifacts provided by the portability framework.
-   */
-  @Description("Directory containing portability framework artifacts.")
-  @Default.String("")
-  String getArtifactsStagingLocation();
-  void setArtifactsStagingLocation(String artifactsDirectory);
 
   @Description("Enable/disable Beam metrics in Flink Runner")
   @Default.Boolean(true)

@@ -6,6 +6,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import javax.annotation.Nullable;
 import org.apache.beam.runners.core.construction.PipelineOptionsTranslation;
 import org.apache.beam.runners.core.construction.PipelineTranslation;
+import org.apache.beam.runners.fnexecution.artifact.ArtifactSource;
 import org.apache.beam.runners.fnexecution.jobsubmission.JobInvocation;
 import org.apache.beam.runners.fnexecution.jobsubmission.JobInvoker;
 import org.apache.beam.runners.fnexecution.jobsubmission.JobPreparation;
@@ -29,11 +30,12 @@ public class FlinkJobInvoker implements JobInvoker {
   @Override
   public JobInvocation invoke(JobPreparation preparation, @Nullable String artifactToken)
       throws IOException {
-      String invocationId =
-          String.format("%s_%d", preparation.id(), ThreadLocalRandom.current().nextInt());
-      PipelineOptions options = PipelineOptionsTranslation.fromProto(preparation.options());
-      Pipeline pipeline = PipelineTranslation.fromProto(preparation.pipeline());
-      FlinkRunner runner = FlinkRunner.fromOptions(options);
-      return FlinkJobInvocation.create(invocationId, executorService, runner, pipeline);
+    String invocationId =
+        String.format("%s_%d", preparation.id(), ThreadLocalRandom.current().nextInt());
+    PipelineOptions options = PipelineOptionsTranslation.fromProto(preparation.options());
+    Pipeline pipeline = PipelineTranslation.fromProto(preparation.pipeline());
+    FlinkRunner runner = FlinkRunner.fromOptions(options);
+    ArtifactSource artifactSource = preparation.stagingService().getService().accessor();
+    return FlinkJobInvocation.create(invocationId, executorService, runner, pipeline);
   }
 }

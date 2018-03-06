@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+
+import org.apache.beam.runners.fnexecution.artifact.ArtifactSource;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.PipelineResult;
 import org.apache.beam.sdk.PipelineRunner;
@@ -40,6 +42,8 @@ import org.apache.flink.client.program.DetachedEnvironment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
+
 /**
  * A {@link PipelineRunner} that executes the operations in the
  * pipeline by first translating them to a Flink Plan and then executing them either locally
@@ -53,6 +57,9 @@ public class FlinkRunner extends PipelineRunner<PipelineResult> {
    * Provided options.
    */
   private final FlinkPipelineOptions options;
+
+  @Nullable
+  private ArtifactSource artifactSource;
 
   /**
    * Construct a runner from the provided options.
@@ -94,6 +101,7 @@ public class FlinkRunner extends PipelineRunner<PipelineResult> {
   private FlinkRunner(FlinkPipelineOptions options) {
     this.options = options;
     this.ptransformViewsWithNonDeterministicKeyCoders = new HashSet<>();
+    this.artifactSource = null;
   }
 
   @Override
@@ -141,6 +149,11 @@ public class FlinkRunner extends PipelineRunner<PipelineResult> {
 
       return new FlinkRunnerResult(accumulators, result.getNetRuntime());
     }
+  }
+
+  /** Optionally set a source for portability artifacts */
+  public void setArtifactSource(ArtifactSource artifactSource) {
+    this.artifactSource = artifactSource;
   }
 
   /**

@@ -37,7 +37,6 @@ public class FlinkJobServerDriver implements Runnable {
 
     @Option(
         name = "--artifacts-dir",
-        required = true,
         usage = "The location to store staged artifact files"
     )
     private String artifactStagingPath = "/tmp/beam-artifact-staging";

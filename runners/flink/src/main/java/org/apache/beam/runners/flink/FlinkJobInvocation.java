@@ -7,6 +7,7 @@ import io.grpc.stub.StreamObserver;
 import javax.annotation.Nullable;
 import org.apache.beam.model.jobmanagement.v1.JobApi.JobMessage;
 import org.apache.beam.model.jobmanagement.v1.JobApi.JobState.Enum;
+import org.apache.beam.runners.fnexecution.artifact.ArtifactSource;
 import org.apache.beam.runners.fnexecution.jobsubmission.JobInvocation;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.PipelineResult;
@@ -20,23 +21,33 @@ public class FlinkJobInvocation implements JobInvocation {
   private static final Logger LOG = LoggerFactory.getLogger(FlinkJobInvocation.class);
 
   public static FlinkJobInvocation create(
-      String id, ListeningExecutorService executorService, FlinkRunner runner, Pipeline pipeline) {
-    return new FlinkJobInvocation(id, executorService, runner, pipeline);
+      String id,
+      ListeningExecutorService executorService,
+      FlinkRunner runner, Pipeline pipeline,
+      ArtifactSource artifactSource) {
+    return new FlinkJobInvocation(id, executorService, runner, pipeline, artifactSource);
   }
 
   private final String id;
   private final ListeningExecutorService executorService;
   private final FlinkRunner runner;
   private final Pipeline pipeline;
+  private final ArtifactSource artifactSource;
+
   @Nullable
   private ListenableFuture<PipelineResult> invocationFuture;
 
   private FlinkJobInvocation(
-      String id, ListeningExecutorService executorService, FlinkRunner runner, Pipeline pipeline) {
+      String id,
+      ListeningExecutorService executorService,
+      FlinkRunner runner,
+      Pipeline pipeline,
+      ArtifactSource artifactSource) {
     this.id = id;
     this.executorService = executorService;
     this.runner = runner;
     this.pipeline = pipeline;
+    this.artifactSource = artifactSource;
     this.invocationFuture = null;
   }
 
