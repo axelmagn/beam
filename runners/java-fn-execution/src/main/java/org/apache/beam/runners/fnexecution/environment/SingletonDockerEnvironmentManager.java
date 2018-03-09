@@ -22,11 +22,11 @@ import static com.google.common.base.Preconditions.checkArgument;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 import java.util.regex.Pattern;
 import javax.annotation.concurrent.GuardedBy;
 import org.apache.beam.model.pipeline.v1.RunnerApi.Environment;
@@ -98,9 +98,8 @@ public class SingletonDockerEnvironmentManager implements EnvironmentManager {
       throws IOException, TimeoutException, InterruptedException {
     // TODO: Generate environment id correctly.
     String environmentId = Long.toString(-123);
-    Path workerPersistentDirectory = Files.createTempDirectory(Paths.get("/tmp"), "worker_persistent_directory");
-    Path semiPersistentDirectory = Files.createTempDirectory(Paths.get("/tmp"), "semi_persistent_dir");
-    //Path semiPersistentDirectory = Paths.get("/tmp");
+    Path workerPersistentDirectory = Files.createTempDirectory("worker_persistent_directory");
+    Path semiPersistentDirectory = Files.createTempDirectory("semi_persistent_dir");
     String containerImage = environment.getUrl();
     // TODO: The default service address will not work for Docker for Mac.
     String loggingEndpoint = loggingServiceServer.getApiServiceDescriptor().getUrl();
@@ -112,6 +111,7 @@ public class SingletonDockerEnvironmentManager implements EnvironmentManager {
     logger.info(String.format("Artifact endpoint: %s", artifactEndpoint));
     logger.info(String.format("Provision endpoint: %s", provisionEndpoint));
     logger.info(String.format("Control endpoint: %s", controlEndpoint));
+
     List<String> dockerArgs = Arrays.asList(
         "-v",
         String.format("%s:%s", workerPersistentDirectory, semiPersistentDirectory),
@@ -130,4 +130,7 @@ public class SingletonDockerEnvironmentManager implements EnvironmentManager {
         controlServiceServer.getService().getClient());
   }
 
+  private static String macEndpoint(String endpoint) {
+    return endpoint.replace("localhost", "docker.for.mac.host.internal");
+  }
 }
