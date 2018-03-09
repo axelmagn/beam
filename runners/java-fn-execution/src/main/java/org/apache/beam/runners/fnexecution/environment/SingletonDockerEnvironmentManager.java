@@ -25,7 +25,6 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
-import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.regex.Pattern;
 import javax.annotation.concurrent.GuardedBy;
@@ -38,9 +37,6 @@ import org.apache.beam.runners.fnexecution.provisioning.StaticGrpcProvisionServi
 
 /** An {@link EnvironmentManager} that manages a single docker container. Not thread-safe. */
 public class SingletonDockerEnvironmentManager implements EnvironmentManager {
-
-  private static final Logger logger =
-      Logger.getLogger(SingletonDockerEnvironmentManager.class.getName());
 
   public static SingletonDockerEnvironmentManager forServices(
       DockerWrapper docker,
@@ -106,12 +102,6 @@ public class SingletonDockerEnvironmentManager implements EnvironmentManager {
     String artifactEndpoint = retrievalServiceServer.getApiServiceDescriptor().getUrl();
     String provisionEndpoint = provisioningServiceServer.getApiServiceDescriptor().getUrl();
     String controlEndpoint = controlServiceServer.getApiServiceDescriptor().getUrl();
-
-    logger.info(String.format("Logging endpoint: %s", loggingEndpoint));
-    logger.info(String.format("Artifact endpoint: %s", artifactEndpoint));
-    logger.info(String.format("Provision endpoint: %s", provisionEndpoint));
-    logger.info(String.format("Control endpoint: %s", controlEndpoint));
-
     List<String> dockerArgs = Arrays.asList(
         "-v",
         String.format("%s:%s", workerPersistentDirectory, semiPersistentDirectory),

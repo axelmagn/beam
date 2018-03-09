@@ -70,11 +70,8 @@ public abstract class ServerFactory {
         throws IOException {
       InetSocketAddress address = new InetSocketAddress(InetAddress.getLoopbackAddress(), 0);
       Server server = createServer(service, address);
-      //apiServiceDescriptor.setUrl(
-      //    HostAndPort.fromParts(address.getHostName(), server.getPort()).toString());
-      // HACK: Set for Mac in-line.
       apiServiceDescriptor.setUrl(
-          HostAndPort.fromParts("docker.for.mac.host.internal", server.getPort()).toString());
+          HostAndPort.fromParts(address.getHostName(), server.getPort()).toString());
       return server;
     }
 
