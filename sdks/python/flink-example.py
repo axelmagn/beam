@@ -2,7 +2,7 @@ import logging
 
 import sys
 import apache_beam as beam
-from apache_beam.io import ReadFromText
+from apache_beam.io import ReadFromText, WriteToText
 from apache_beam.options.pipeline_options import PipelineOptions
 from apache_beam.runners.portability import universal_local_runner
 
@@ -20,5 +20,6 @@ if __name__ == "__main__":
                         .with_output_types(unicode))
         | 'PairWithOne' >> beam.Map(lambda x: (x, 1))
         | 'GroupAndSum' >> beam.CombinePerKey(sum)
-        | beam.Map(lambda x: logging.info("Got %s", x) or (x, 1)))
+        | beam.Map(lambda x: logging.info("Got %s", x) or (x, 1))
+        | 'Write' >> WriteToText("kinglear.out.txt"))
 
