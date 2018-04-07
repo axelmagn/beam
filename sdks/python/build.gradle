@@ -25,6 +25,10 @@ apply plugin: "base"
 task test {}
 check.dependsOn test
 
+configurations {
+  main
+}
+
 def envdir = "${project.buildDir}/gradleenv"
 
 task setupVirtualenv {
