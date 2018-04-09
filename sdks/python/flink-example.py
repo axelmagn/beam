@@ -20,6 +20,7 @@ if __name__ == "__main__":
                         .with_output_types(unicode))
         | 'PairWithOne' >> beam.Map(lambda x: (x, 1))
         | 'GroupAndSum' >> beam.CombinePerKey(sum)
-        | beam.Map(lambda x: logging.info("Got %s", x) or (x, 1))
-        | 'Write' >> WriteToText("kinglear.out.txt"))
+        | beam.Map(lambda x: logging.info("Got %s", x) or x))
+        # | beam.Map(lambda x: logging.info("Got %s", x) or x)
+        # | 'Write' >> WriteToText("/tmp/kinglear.out.txt"))
 
