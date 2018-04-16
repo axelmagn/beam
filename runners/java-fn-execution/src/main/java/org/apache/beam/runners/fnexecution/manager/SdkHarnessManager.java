@@ -21,7 +21,6 @@ package org.apache.beam.runners.fnexecution.manager;
 import org.apache.beam.model.fnexecution.v1.ProvisionApi;
 import org.apache.beam.model.pipeline.v1.RunnerApi.Environment;
 import org.apache.beam.runners.fnexecution.artifact.ArtifactSource;
-import org.apache.beam.runners.fnexecution.manager.EnvironmentSession;
 
 /**
  * A long-lived class to manage SDK harness container instances on behalf of

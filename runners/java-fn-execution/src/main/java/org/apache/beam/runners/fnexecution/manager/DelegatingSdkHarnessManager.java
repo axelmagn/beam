@@ -8,11 +8,8 @@ import org.apache.beam.runners.fnexecution.artifact.ArtifactRetrievalService;
 import org.apache.beam.runners.fnexecution.artifact.ArtifactSource;
 import org.apache.beam.runners.fnexecution.control.ControlClientPool;
 import org.apache.beam.runners.fnexecution.control.FnApiControlClientPoolService;
-import org.apache.beam.runners.fnexecution.environment.EnvironmentManager;
 import org.apache.beam.runners.fnexecution.environment.RemoteEnvironment;
 import org.apache.beam.runners.fnexecution.logging.GrpcLoggingService;
-import org.apache.beam.runners.fnexecution.manager.EnvironmentSession;
-import org.apache.beam.runners.fnexecution.manager.SdkHarnessManager;
 import org.apache.beam.runners.fnexecution.provisioning.StaticGrpcProvisionService;
 
 import java.util.HashMap;
