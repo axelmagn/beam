@@ -26,6 +26,8 @@ import org.apache.beam.model.jobmanagement.v1.ArtifactApi.Manifest;
 /**
  * Makes artifacts available to an ArtifactRetrievalService by
  * encapsulating runner-specific resources.
+ *
+ * An ArtifactSource may be accessed concurrently, and therefore <b>needs to be threadsafe</b>.
  */
 public interface ArtifactSource {
 
