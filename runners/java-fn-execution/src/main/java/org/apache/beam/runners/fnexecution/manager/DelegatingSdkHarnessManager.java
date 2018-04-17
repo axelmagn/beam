@@ -52,18 +52,21 @@ public class DelegatingSdkHarnessManager implements SdkHarnessManager {
 
   // TODO(axelmagn): figure out if this needs to be threadsafe
   // key: ProvisionApi.ProvisionInfo.job_id
-  private final Map<String, JobResources> jobResourcesCache;
+  private final Map<String, JobResources> jobResources;
 
   // TODO(axelmagn): figure out if this needs to be threadsafe
   // key: RunnerApi.Environment.url
-  private final Map<String, EnvironmentResources> environmentResourcesCache;
+  private final Map<String, EnvironmentResources> environmentResources;
+
+  // TODO(axelmagn): operator resources
+  // private final Map<String, ???> operatorResources;
 
   // unbounded lifetime resources
 
 
-  public DelegatingSdkHarnessManager() {
-    jobResourcesCache = new HashMap<>();
-    environmentResourcesCache = new HashMap<>();
+  private DelegatingSdkHarnessManager() {
+    jobResources = new HashMap<>();
+    environmentResources = new HashMap<>();
   }
 
   @Override
@@ -72,8 +75,8 @@ public class DelegatingSdkHarnessManager implements SdkHarnessManager {
       ExecutableStage executableStage,
       ArtifactSource artifactSource,
       StateRequestHandler stateRequestHandler) throws Exception {
-    // TODO(axelmagn): unpack executable stage
     // TODO(axelmagn): provision environment resources
+
     // TODO(axelmagn): provision job resources
     // TODO(axelmagn): store operation resources
     // TODO(axelmagn): create bundle
