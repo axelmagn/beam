@@ -5,6 +5,7 @@ import org.apache.beam.model.fnexecution.v1.ProvisionApi;
 import org.apache.beam.model.pipeline.v1.RunnerApi;
 import org.apache.beam.runners.core.construction.graph.ExecutableStage;
 import org.apache.beam.runners.fnexecution.GrpcFnServer;
+import org.apache.beam.runners.fnexecution.ServerFactory;
 import org.apache.beam.runners.fnexecution.artifact.ArtifactRetrievalService;
 import org.apache.beam.runners.fnexecution.artifact.ArtifactSource;
 import org.apache.beam.runners.fnexecution.control.ControlClientPool;
@@ -14,9 +15,12 @@ import org.apache.beam.runners.fnexecution.environment.RemoteEnvironment;
 import org.apache.beam.runners.fnexecution.logging.GrpcLoggingService;
 import org.apache.beam.runners.fnexecution.provisioning.StaticGrpcProvisionService;
 import org.apache.beam.runners.fnexecution.state.StateRequestHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 
 /**
  * Manages SDK harness containers and job resources on behalf of
@@ -27,6 +31,7 @@ import java.util.Map;
  * @TODO(axelmagn): extend to clean up unused containers and resources
  */
 public class DelegatingSdkHarnessManager implements SdkHarnessManager {
+  Logger log = LoggerFactory.getLogger(DelegatingSdkHarnessManager.class);
 
   /**
    * Resources bound to the lifetime of a job.
@@ -50,11 +55,9 @@ public class DelegatingSdkHarnessManager implements SdkHarnessManager {
     abstract GrpcFnServer<FnApiControlClientPoolService> controlServer();
   }
 
-  // TODO(axelmagn): figure out if this needs to be threadsafe
   // key: ProvisionApi.ProvisionInfo.job_id
   private final Map<String, JobResources> jobResources;
 
-  // TODO(axelmagn): figure out if this needs to be threadsafe
   // key: RunnerApi.Environment.url
   private final Map<String, EnvironmentResources> environmentResources;
 
@@ -62,9 +65,15 @@ public class DelegatingSdkHarnessManager implements SdkHarnessManager {
   // private final Map<String, ???> operatorResources;
 
   // unbounded lifetime resources
+  private final ServerFactory serverFactory;
+  private final ExecutorService executorService;
 
 
-  private DelegatingSdkHarnessManager() {
+  private DelegatingSdkHarnessManager(
+      ServerFactory serverFactory, ExecutorService executorService) {
+    this.serverFactory = serverFactory;
+    this.executorService = executorService;
+
     jobResources = new HashMap<>();
     environmentResources = new HashMap<>();
   }
@@ -75,10 +84,9 @@ public class DelegatingSdkHarnessManager implements SdkHarnessManager {
       ExecutableStage executableStage,
       ArtifactSource artifactSource,
       StateRequestHandler stateRequestHandler) throws Exception {
-    // TODO(axelmagn): provision environment resources
-
     // TODO(axelmagn): provision job resources
-    // TODO(axelmagn): store operation resources
+    // TODO(axelmagn): register operation resources
+    // TODO(axelmagn): provision environment resources
     // TODO(axelmagn): create bundle
     return null;
   }
@@ -86,4 +94,21 @@ public class DelegatingSdkHarnessManager implements SdkHarnessManager {
   @Override
   public void close() throws Exception {
   }
+
+  private JobResources getOrCreateJobResources(
+    ProvisionApi.ProvisionInfo jobInfo,
+    ExecutableStage executableStage,
+    ArtifactSource artifactSource,
+    StateRequestHandler stateRequestHandler) throws Exception {
+    String jobKey = jobInfo.getJobId();
+    synchronized (jobResources) {
+      if (jobResources.containsKey(jobKey)) {
+        return jobResources.get(jobKey);
+      } else {
+        // TODO(axelmagn): create logging, provision, artifact servers
+        return null;
+      }
+    }
+  }
+
 }
