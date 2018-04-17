@@ -18,6 +18,7 @@ import org.apache.beam.runners.fnexecution.state.StateRequestHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -33,27 +34,8 @@ import java.util.concurrent.ExecutorService;
 public class DelegatingSdkHarnessManager implements SdkHarnessManager {
   Logger log = LoggerFactory.getLogger(DelegatingSdkHarnessManager.class);
 
-  /**
-   * Resources bound to the lifetime of a job.
-   * @TODO(axelmagn): identify environment resources
-   */
-  @AutoValue
-  abstract static class JobResources {
-    abstract GrpcFnServer<GrpcLoggingService> loggingServer();
-    abstract GrpcFnServer<StaticGrpcProvisionService> provisionServer();
-    abstract GrpcFnServer<ArtifactRetrievalService> retrievalServer();
-  }
 
-  /**
-   * Resources bound to the lifetime of a container environment.
-   * @TODO(axelmagn): identify environment resources
-   */
-  @AutoValue
-  abstract static class EnvironmentResources {
-    abstract ControlClientPool controlClientPool();
-    abstract RemoteEnvironment remoteEnvironment();
-    abstract GrpcFnServer<FnApiControlClientPoolService> controlServer();
-  }
+
 
   // key: ProvisionApi.ProvisionInfo.job_id
   private final Map<String, JobResources> jobResources;
@@ -65,15 +47,8 @@ public class DelegatingSdkHarnessManager implements SdkHarnessManager {
   // private final Map<String, ???> operatorResources;
 
   // unbounded lifetime resources
-  private final ServerFactory serverFactory;
-  private final ExecutorService executorService;
 
-
-  private DelegatingSdkHarnessManager(
-      ServerFactory serverFactory, ExecutorService executorService) {
-    this.serverFactory = serverFactory;
-    this.executorService = executorService;
-
+  private DelegatingSdkHarnessManager() {
     jobResources = new HashMap<>();
     environmentResources = new HashMap<>();
   }
@@ -109,6 +84,10 @@ public class DelegatingSdkHarnessManager implements SdkHarnessManager {
         return null;
       }
     }
+  }
+
+  private GrpcFnServer<GrpcLoggingService> createLoggingService() throws IOException {
+
   }
 
 }
