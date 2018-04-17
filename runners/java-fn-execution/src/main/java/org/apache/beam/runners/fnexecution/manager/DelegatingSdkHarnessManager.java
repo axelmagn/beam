@@ -40,12 +40,6 @@ public class DelegatingSdkHarnessManager implements SdkHarnessManager {
   }
 
   /**
-   * Resources bound to the lifetime of an operator within a job.
-   */
-  abstract static class OperatorResources {
-  }
-
-  /**
    * Resources bound to the lifetime of a container environment.
    * @TODO(axelmagn): identify environment resources
    */
@@ -78,6 +72,11 @@ public class DelegatingSdkHarnessManager implements SdkHarnessManager {
       ExecutableStage executableStage,
       ArtifactSource artifactSource,
       StateRequestHandler stateRequestHandler) throws Exception {
+    // TODO(axelmagn): unpack executable stage
+    // TODO(axelmagn): provision environment resources
+    // TODO(axelmagn): provision job resources
+    // TODO(axelmagn): store operation resources
+    // TODO(axelmagn): create bundle
     return null;
   }
 
