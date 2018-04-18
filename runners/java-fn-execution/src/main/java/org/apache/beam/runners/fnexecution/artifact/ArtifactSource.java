@@ -34,7 +34,7 @@ public interface ArtifactSource {
   /**
    * Get the artifact manifest available from this source.
    */
-  Manifest getManifest() throws IOException;
+  Manifest getManifest() throws Exception;
 
   /**
    * Get an artifact by its name.
