@@ -90,12 +90,14 @@ public class EphemeralArtifactSource implements ArtifactSource, AutoCloseable {
    * @return true if a connection could be opened.
    * @throws InterruptedException
    */
-  private synchronized boolean openConnection() throws InterruptedException {
-    if(state == State.OPEN) {
-      connectionsLock.acquire();
-      return true;
+  private boolean openConnection() throws InterruptedException {
+    synchronized (this) {
+      if (state == State.OPEN) {
+        connectionsLock.acquire();
+        return true;
+      }
+      return false;
     }
-    return false;
   }
 
   private void closeConnection() {
@@ -106,12 +108,14 @@ public class EphemeralArtifactSource implements ArtifactSource, AutoCloseable {
    * Start the closing operation.  After this is called, no more connections will be accepted.
    * @return previous state.
    */
-  private synchronized State startClose() {
-    State prevState = state;
-    if(state == State.OPEN) {
-      state = State.CLOSING;
+  private State startClose() {
+    synchronized (this) {
+      State prevState = state;
+      if (state == State.OPEN) {
+        state = State.CLOSING;
+      }
+      return prevState;
     }
-    return prevState;
   }
 
   private void finishExistingConnections() throws InterruptedException {
