@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 
 /**
@@ -30,8 +31,7 @@ public class GrpcArtifactProxyService
     return new GrpcArtifactProxyService();
   }
 
-  private ArtifactSource artifactSource;
-  private Map<UUID, ArtifactSource> artifactSources;
+  private ConcurrentHashMap<UUID, ArtifactSource> artifactSources;
 
   private GrpcArtifactProxyService() {
   }
