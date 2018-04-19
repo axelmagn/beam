@@ -2,6 +2,8 @@ package org.apache.beam.runners.fnexecution.artifact;
 
 import io.grpc.stub.StreamObserver;
 import org.apache.beam.model.jobmanagement.v1.ArtifactApi;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
@@ -19,8 +21,6 @@ import java.util.concurrent.Semaphore;
  * closed state are illegal.
  */
 public class EphemeralArtifactSource implements ArtifactSource, AutoCloseable {
-  // So the
-
   private enum State {
     OPEN,
     CLOSING,
@@ -30,6 +30,7 @@ public class EphemeralArtifactSource implements ArtifactSource, AutoCloseable {
   // this number is arbitrarily high.  The important thing is for all connections to release
   // their permits before we deregister the artifact source.
   private static final int MAX_CONNECTIONS = Integer.MAX_VALUE;
+  private static final Logger log = LoggerFactory.getLogger(EphemeralArtifactSource.class);
 
   private final ArtifactSource artifactSource;
   // ALL METHODS ACCESSING STATE NEED TO BE SYNCHRONIZED
@@ -65,23 +66,48 @@ public class EphemeralArtifactSource implements ArtifactSource, AutoCloseable {
 
   @Override
   public void getArtifact(String name, StreamObserver<ArtifactApi.ArtifactChunk> responseObserver) {
-    // TODO(axelmagn):
-    // openConnection();
-    // add callback to closeConnection() when observer finishes
-    // call getArtifact on artifactSource
+    try {
+      if (openConnection()) {
+        DisconnectingStreamObserver<ArtifactApi.ArtifactChunk> disconnectingStreamObserver =
+            new DisconnectingStreamObserver<>(responseObserver, this);
+        artifactSource.getArtifact(name, disconnectingStreamObserver);
+      } else {
+        throw new IllegalStateException(
+            String.format(
+                "%s is in state %s and cannot retrieve the artifact.",
+                EphemeralArtifactSource.class.getName(),
+                state.toString()));
+      }
+    } catch (InterruptedException e) {
+      responseObserver.onError(e);
+    }
   }
 
   @Override
   public void close() throws Exception {
-    State prevState = startClose();
+    // enter closing state
+    State prevState;
+    synchronized (this) {
+      prevState = state;
+      if (state == State.OPEN) {
+        state = State.CLOSING;
+      }
+    }
     switch (prevState) {
       case OPEN:
-        finishExistingConnections();
+        // finish existing connections
+        connectionsLock.acquire(MAX_CONNECTIONS);
+        synchronized (this) {
+          state = State.CLOSED;
+        }
+        closeLatch.countDown();
         break;
       case CLOSING:
-        awaitClosed();
+        // wait to be closed.  another thread is already acquiring the lock.
+        closeLatch.await();
         break;
       case CLOSED:
+        // nothing to do
     }
   }
 
@@ -104,31 +130,31 @@ public class EphemeralArtifactSource implements ArtifactSource, AutoCloseable {
     connectionsLock.release();
   }
 
-  /**
-   * Start the closing operation.  After this is called, no more connections will be accepted.
-   * @return previous state.
-   */
-  private State startClose() {
-    synchronized (this) {
-      State prevState = state;
-      if (state == State.OPEN) {
-        state = State.CLOSING;
-      }
-      return prevState;
-    }
-  }
+  private static class DisconnectingStreamObserver<T> implements StreamObserver<T> {
+    private final StreamObserver<T> underlying;
+    private final EphemeralArtifactSource artifactSource;
 
-  private void finishExistingConnections() throws InterruptedException {
-    // wait to acquire all semaphore permits
-    connectionsLock.acquire(MAX_CONNECTIONS);
-    // transition to closed state
-    synchronized (this) {
-      state = State.CLOSED;
+    DisconnectingStreamObserver(
+        StreamObserver<T> underlying, EphemeralArtifactSource artifactSource) {
+      this.underlying = underlying;
+      this.artifactSource = artifactSource;
     }
-    closeLatch.countDown();
-  }
 
-  private void awaitClosed() throws InterruptedException {
-    closeLatch.await();
+    @Override
+    public void onNext(T t) {
+      underlying.onNext(t);
+    }
+
+    @Override
+    public void onError(Throwable throwable) {
+      artifactSource.closeConnection();
+      underlying.onError(throwable);
+    }
+
+    @Override
+    public void onCompleted() {
+      artifactSource.closeConnection();
+      underlying.onCompleted();
+    }
   }
 }
