@@ -9,11 +9,8 @@ import org.apache.beam.runners.fnexecution.FnService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Semaphore;
 
 /**
  * An {@link ArtifactRetrievalService} implemented via gRPC.
@@ -24,7 +21,7 @@ import java.util.concurrent.Semaphore;
 public class GrpcArtifactProxyService
     extends ArtifactRetrievalServiceGrpc.ArtifactRetrievalServiceImplBase
     implements FnService, ArtifactRetrievalService {
-  private static final Logger LOGGER = LoggerFactory.getLogger(GrpcArtifactProxyService.class);
+  private static final Logger log = LoggerFactory.getLogger(GrpcArtifactProxyService.class);
 
   public static GrpcArtifactProxyService create() {
     return new GrpcArtifactProxyService();
@@ -51,25 +48,17 @@ public class GrpcArtifactProxyService
   public void getManifest(
       ArtifactApi.GetManifestRequest request,
       StreamObserver<ArtifactApi.GetManifestResponse> responseObserver) {
-
-    // TODO(axelmagn): retrieve and lock open ArtifactSource
-    // TODO(axelmagn): figure out concurrency
-    synchronized (artifactSources) {
-      EphemeralArtifactSource artifactSource =
-          artifactSources
-              .searchValues(
-                  Integer.MAX_VALUE /* parallelism threshold */,
-                  candidate -> candidate.isAvailable() ? candidate : null);
-    }
-
     try {
-      ArtifactApi.Manifest manifest = artifactSource.getManifest();
+      ArtifactApi.Manifest manifest;
+      synchronized (artifactSources) {
+        manifest = getAvailableArtifactSource().getManifest();
+      }
       ArtifactApi.GetManifestResponse response =
           ArtifactApi.GetManifestResponse.newBuilder().setManifest(manifest).build();
       responseObserver.onNext(response);
       responseObserver.onCompleted();
     } catch (Exception e) {
-      LOGGER.warn("Error retrieving manifest", e);
+      log.warn("Error retrieving manifest", e);
       responseObserver.onError(
           Status.INTERNAL
               .withDescription("Could not retrieve manifest.")
@@ -82,9 +71,10 @@ public class GrpcArtifactProxyService
   public void getArtifact(
       ArtifactApi.GetArtifactRequest request,
       StreamObserver<ArtifactApi.ArtifactChunk> responseObserver) {
-    // TODO(axelmagn): retrieve open ArtifactSource
     try {
-      artifactSource.getArtifact(request.getName(), responseObserver);
+      synchronized (artifactSources) {
+        getAvailableArtifactSource().getArtifact(request.getName(), responseObserver);
+      }
     } catch (Exception e) {
       responseObserver.onError(
           Status.INTERNAL
@@ -96,8 +86,12 @@ public class GrpcArtifactProxyService
 
   @Override
   public void close() throws Exception {
-    // TODO: wrap up any open streams
-    LOGGER.warn("GrpcArtifactProxyService.close() was called but is not yet implemented.");
+    synchronized (artifactSources) {
+      // we do not use forEachValue because we want to propagate any exceptions
+      for (EphemeralArtifactSource artifactSource : artifactSources.values()) {
+        artifactSource.close();
+      }
+    }
   }
 
   private void deregisterArtifactSource(UUID key) throws Exception {
@@ -109,5 +103,17 @@ public class GrpcArtifactProxyService
     if (artifactSource != null) {
       artifactSource.close();
     }
+  }
+
+  private EphemeralArtifactSource getAvailableArtifactSource() throws IllegalStateException {
+    EphemeralArtifactSource artifactSource =
+        artifactSources
+            .searchValues(
+                Integer.MAX_VALUE /* parallelism threshold */,
+                candidate -> candidate.isAvailable() ? candidate : null);
+    if (artifactSource == null) {
+      throw new IllegalStateException("No artifact sources are currently available.");
+    }
+    return artifactSource;
   }
 }

@@ -117,7 +117,9 @@ public class EphemeralArtifactSource implements ArtifactSource, AutoCloseable {
   }
 
   public boolean isAvailable() {
-    return state == State.OPEN;
+    synchronized (this) {
+      return state == State.OPEN;
+    }
   }
 
   /**
