@@ -21,26 +21,31 @@ import java.util.concurrent.Semaphore;
  * closed state are illegal.
  */
 public class EphemeralArtifactSource implements ArtifactSource, AutoCloseable {
+  // this number is arbitrarily high.  The important thing is for all connections to release
+  // their permits before we deregister the artifact source.
+  private static final int MAX_CONNECTIONS = Integer.MAX_VALUE;
+  // TODO(axelmagn): add relevant log statements
+  private static final Logger log = LoggerFactory.getLogger(EphemeralArtifactSource.class);
+
   private enum State {
     OPEN,
     CLOSING,
     CLOSED,
   }
 
-  // this number is arbitrarily high.  The important thing is for all connections to release
-  // their permits before we deregister the artifact source.
-  private static final int MAX_CONNECTIONS = Integer.MAX_VALUE;
-  private static final Logger log = LoggerFactory.getLogger(EphemeralArtifactSource.class);
+  public static EphemeralArtifactSource fromArtifactSource(ArtifactSource upstream) {
+    return new EphemeralArtifactSource(upstream);
+  }
 
-  private final ArtifactSource artifactSource;
+  private final ArtifactSource upstream;
   // ALL METHODS ACCESSING STATE NEED TO BE SYNCHRONIZED
   private State state;
   private Semaphore connectionsLock;
   private CountDownLatch closeLatch;
 
-  private EphemeralArtifactSource(ArtifactSource artifactSource) {
-    this.artifactSource = artifactSource;
-    this.connectionsLock = new Semaphore(MAX_CONNECTIONS, true);
+  private EphemeralArtifactSource(ArtifactSource upstream) {
+    this.upstream = upstream;
+    this.connectionsLock = new Semaphore(MAX_CONNECTIONS, true /* fair queueing */);
     this.state = State.OPEN;
     this.closeLatch = new CountDownLatch(1);
   }
@@ -50,7 +55,7 @@ public class EphemeralArtifactSource implements ArtifactSource, AutoCloseable {
     if(openConnection()) {
       ArtifactApi.Manifest manifest;
       try {
-        manifest = artifactSource.getManifest();
+        manifest = upstream.getManifest();
       } finally {
         closeConnection();
       }
@@ -70,7 +75,7 @@ public class EphemeralArtifactSource implements ArtifactSource, AutoCloseable {
       if (openConnection()) {
         DisconnectingStreamObserver<ArtifactApi.ArtifactChunk> disconnectingStreamObserver =
             new DisconnectingStreamObserver<>(responseObserver, this);
-        artifactSource.getArtifact(name, disconnectingStreamObserver);
+        upstream.getArtifact(name, disconnectingStreamObserver);
       } else {
         throw new IllegalStateException(
             String.format(
@@ -109,6 +114,10 @@ public class EphemeralArtifactSource implements ArtifactSource, AutoCloseable {
       case CLOSED:
         // nothing to do
     }
+  }
+
+  public boolean isAvailable() {
+    return state == State.OPEN;
   }
 
   /**
