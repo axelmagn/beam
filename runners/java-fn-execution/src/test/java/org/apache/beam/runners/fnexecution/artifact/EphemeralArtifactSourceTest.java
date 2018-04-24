@@ -1,13 +1,19 @@
 package org.apache.beam.runners.fnexecution.artifact;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.protobuf.ByteString;
 import io.grpc.stub.StreamObserver;
+
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.apache.beam.model.jobmanagement.v1.ArtifactApi;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 
@@ -23,6 +29,8 @@ public class EphemeralArtifactSourceTest {
       ArtifactApi.ArtifactChunk.newBuilder().setData(ByteString.copyFrom(EXAMPLE_DATA[1])).build(),
       ArtifactApi.ArtifactChunk.newBuilder().setData(ByteString.copyFrom(EXAMPLE_DATA[2])).build()
   };
+  private static final long TIMEOUT_MS = 5000;
+
 
   @Mock
   private ArtifactSource upstream;
@@ -41,7 +49,7 @@ public class EphemeralArtifactSourceTest {
   public void testGetsManifestFromUpstream() throws Exception {
     setUpNormalUpstreamBehavior();
     ArtifactApi.Manifest manifest = artifactSource.getManifest();
-    verify(upstream.getManifest(), times(1));
+    verify(upstream, times(1)).getManifest();
   }
 
   @Test
@@ -51,7 +59,58 @@ public class EphemeralArtifactSourceTest {
     verify(outerObserver, times(3)).onNext(any());
   }
 
+  @Test
+  public void testGetManifestBlocksCloseUntilAllConnectionsFinished() throws Exception {
+    // submit some calls that will block
+    ExecutorService executorService =
+        Executors.newCachedThreadPool(new ThreadFactoryBuilder().setDaemon(true).build());
+    CountDownLatch manifestEntryLatch = new CountDownLatch(1);
+    CountDownLatch manifestReplyLatch = new CountDownLatch(1);
+    CountDownLatch closeCompleteLatch = new CountDownLatch(1);
+    AtomicBoolean closeCompleteObserved = new AtomicBoolean(false);
+    AtomicBoolean closeExceptionObserved = new AtomicBoolean(false);
 
+    // set up latched response to query
+    doAnswer(invocation -> {
+      manifestEntryLatch.countDown();
+      manifestReplyLatch.await();
+      return EXAMPLE_MANIFEST;
+    }).when(upstream).getManifest();
+
+    // start a manifest request
+    Future<ArtifactApi.Manifest> manifestFuture =
+        executorService.submit(() -> artifactSource.getManifest());
+
+    // wait for the reply to start
+    manifestEntryLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+
+    // call close on the artifactSource
+    executorService.execute(() -> {
+      try {
+        artifactSource.close();
+        closeCompleteObserved.set(true);
+      } catch (Exception e) {
+        closeExceptionObserved.set(true);
+      } finally {
+        closeCompleteLatch.countDown();
+      }
+    });
+
+    // make sure that the response still isn't done
+    assertThat(manifestFuture.isDone(), is(false));
+    assertThat(closeCompleteObserved.get(), is(false));
+    assertThat(closeExceptionObserved.get(), is(false));
+
+    // allow the response to finish
+    manifestReplyLatch.countDown();
+
+    // wait for manifest reply to finish and close to complete
+    ArtifactApi.Manifest manifest = manifestFuture.get(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+    closeCompleteLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+    assertThat(closeCompleteObserved.get(), is(true));
+    assertThat(closeExceptionObserved.get(), is(false));
+    assertThat(manifest, equals(EXAMPLE_MANIFEST));
+  }
 
   private void setUpNormalUpstreamBehavior() throws Exception {
     when(upstream.getManifest()).thenReturn(EXAMPLE_MANIFEST);
