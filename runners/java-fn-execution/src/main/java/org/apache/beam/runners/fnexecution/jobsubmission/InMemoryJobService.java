@@ -22,6 +22,8 @@ import io.grpc.Status;
 import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
+
+import java.io.File;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -108,12 +110,19 @@ public class InMemoryJobService extends JobServiceGrpc.JobServiceImplBase implem
         return;
       }
 
+      // this assumes the current ArtifactStagingService impl, expects a file path as its staging
+      // session token.
+      // TODO: delegate token encoding to an interface specific to the ArtifactStagingService once
+      // it is time to support more than one staging service.
+      String stagingSessionToken = (new File(preparationId)).getAbsolutePath();
+
       // send response
       PrepareJobResponse response =
           PrepareJobResponse
               .newBuilder()
               .setPreparationId(preparationId)
               .setArtifactStagingEndpoint(stagingServiceDescriptor)
+              .setStagingSessionToken(stagingSessionToken)
               .build();
       responseObserver.onNext(response);
       responseObserver.onCompleted();
