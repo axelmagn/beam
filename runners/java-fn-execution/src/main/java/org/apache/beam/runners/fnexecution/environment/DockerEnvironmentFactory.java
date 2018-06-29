@@ -17,8 +17,13 @@
  */
 package org.apache.beam.runners.fnexecution.environment;
 
+import static com.google.common.base.MoreObjects.firstNonNull;
+
 import com.google.common.collect.ImmutableList;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 import org.apache.beam.model.pipeline.v1.RunnerApi.Environment;
@@ -120,10 +125,10 @@ public class DockerEnvironmentFactory implements EnvironmentFactory {
     String provisionEndpoint = provisioningServiceServer.getApiServiceDescriptor().getUrl();
     String controlEndpoint = controlServiceServer.getApiServiceDescriptor().getUrl();
 
-    List<String> volArg =
-        ImmutableList.of(
-            // NOTE: Host networking does not work on Mac, but the command line flag is accepted.
-            "--network=host");
+    List<String> volArg = new ArrayList<>();
+    volArg.addAll(gcsCredentialArgs());
+    // NOTE: Host networking does not work on Mac, but the command line flag is accepted.
+    volArg.add("--network=host");
 
     List<String> args =
         ImmutableList.of(
@@ -167,5 +172,22 @@ public class DockerEnvironmentFactory implements EnvironmentFactory {
     }
 
     return DockerContainerEnvironment.create(docker, environment, containerId, instructionHandler);
+  }
+
+  private List<String> gcsCredentialArgs() {
+    String dockerGcloudConfig = "/root/lconfig/gcloud";
+    String localGcloudConfig =
+        firstNonNull(
+            System.getenv("CLOUDSDK_CONFIG"),
+            Paths.get(System.getProperty("user.home"), ".config", "gcloud").toString());
+    if (Files.exists(Paths.get(localGcloudConfig))) {
+      return ImmutableList.of(
+          "--mount",
+          String.format("type=bind,src=%s,dst=%s", localGcloudConfig, dockerGcloudConfig),
+          "--env",
+          String.format("CLOUDSDK_CONFIG=%s", dockerGcloudConfig));
+    } else {
+      return ImmutableList.of();
+    }
   }
 }
