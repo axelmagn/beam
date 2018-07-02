@@ -125,10 +125,11 @@ public class DockerEnvironmentFactory implements EnvironmentFactory {
     String provisionEndpoint = provisioningServiceServer.getApiServiceDescriptor().getUrl();
     String controlEndpoint = controlServiceServer.getApiServiceDescriptor().getUrl();
 
-    List<String> volArg = new ArrayList<>();
-    volArg.addAll(gcsCredentialArgs());
-    // NOTE: Host networking does not work on Mac, but the command line flag is accepted.
-    volArg.add("--network=host");
+    List<String> volArg = ImmutableList.<String>builder()
+        .addAll(gcsCredentialArgs())
+        // NOTE: Host networking does not work on Mac, but the command line flag is accepted.
+        .add("--network=host")
+        .build();
 
     List<String> args =
         ImmutableList.of(
